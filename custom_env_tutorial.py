@@ -102,6 +102,24 @@ class ChopperScape(Env):
     def get_action_meanings(self):
         return {0: "Right", 1: "Left", 2: "Down", 3: "Up", 4: "Do Nothing"}
     
+    def has_collided(self, elem1, elem2):
+        x_col = False
+        y_col = False
+
+        elem1_x, elem1_y = elem1.get_position()
+        elem2_x, elem2_y = elem2.get_position()
+
+        if 2 * abs(elem1_x - elem2_x) <= (elem1.icon_w + elem2.icon_w):
+            x_col = True
+
+        if 2 * abs(elem1_y - elem2_y) <= (elem1.icon_h + elem2.icon_h):
+            y_col = True
+
+        if x_col and y_col:
+            return True
+
+        return False
+    
     def step(self, action):
     # Flag that marks the termination of an episode
         done = False
@@ -113,6 +131,7 @@ class ChopperScape(Env):
         self.fuel_left -= 1 
         
         # Reward for executing a step.
+
         reward = 1      
 
         # apply the action to the chopper
@@ -189,6 +208,7 @@ class ChopperScape(Env):
                 if self.has_collided(self.chopper, elem):
                     # Remove the fuel tank from the env.
                     self.elements.remove(elem)
+                    reward = 5
                     
                     # Fill the fuel tank of the chopper to full.
                     self.fuel_left = self.max_fuel
