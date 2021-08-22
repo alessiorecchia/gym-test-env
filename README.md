@@ -1,1 +1,1 @@
-Testing hot to create a custom Openai gym environment
+Testing how to create a custom Openai gym environment
