@@ -17,6 +17,7 @@ from custom_env_tutorial import ChopperScape
 from dqn import DQN
 
 from env_handler import ReplayMemory
+from get_copter_pos import get_screen
 
 BATCH_SIZE = 128
 GAMMA = 0.999
@@ -24,6 +25,8 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 TARGET_UPDATE = 10
+EPISODES = 100
+SAVING_PATH = './model/test_dqn'
 
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -33,17 +36,25 @@ if is_ipython:
 plt.ion()
 
 env = ChopperScape()
+env.reset()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
 
+# Get screen size so that we can initialize layers correctly based on shape
+# returned from AI gym. Typical dimensions at this point are close to 3x40x90
+# which is the result of a clamped and down-scaled render buffer in get_screen()
+init_screen = get_screen(env)
+print('Init screen shape', init_screen.shape)
+_, _, screen_height, screen_width = init_screen.shape
+
 # Get number of actions from gym action space
 n_actions = env.action_space.n
 
-policy_net = DQN(n_actions).to(device)
-target_net = DQN(n_actions).to(device)
+policy_net = DQN(screen_height, screen_width, n_actions).to(device)
+target_net = DQN(screen_height, screen_width, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
@@ -136,26 +147,33 @@ def optimize_model():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
-num_episodes = 50
+num_episodes = EPISODES
 for i_episode in range(num_episodes):
     # Initialize the environment and state
     env.reset()
-    last_screen = get_screen()
-    current_screen = get_screen()
+    last_screen = get_screen(env)
+    current_screen = get_screen(env)
     state = current_screen - last_screen
+    # print('State: ', state)
     for t in count():
         # Select and perform an action
         action = select_action(state)
         _, reward, done, _ = env.step(action.item())
         reward = torch.tensor([reward], device=device)
+        print(f'Action: {action.item()} | Reward: {reward} | Done: {done}', end="")
+        print('\r', end='')
+        # print('\n')
 
         # Observe new state
         last_screen = current_screen
-        current_screen = get_screen()
+        current_screen = get_screen(env)
+        # print(f'Current screen shape: {current_screen.shape} | Last screen shape: {last_screen.shape}', end="")
+        # print('\r', end='')
         if not done:
             next_state = current_screen - last_screen
         else:
             next_state = None
+            # next_state = env.reset()
 
         # Store the transition in memory
         memory.push(state, action, next_state, reward)
@@ -168,12 +186,14 @@ for i_episode in range(num_episodes):
         if done:
             episode_durations.append(t + 1)
             plot_durations()
+            print(f'Episode {i_episode}: Done!')
             break
     # Update the target network, copying all weights and biases in DQN
     if i_episode % TARGET_UPDATE == 0:
         target_net.load_state_dict(policy_net.state_dict())
 
 print('Complete')
+torch.save(target_net.state_dict(), SAVING_PATH)
 env.render()
 env.close()
 plt.ioff()

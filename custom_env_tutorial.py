@@ -43,13 +43,18 @@ class ChopperScape(Env):
         # Init the canvas 
         self.canvas = np.ones(self.observation_shape) * 1
 
+        lifes = 0
+
         # Draw the heliopter on canvas
         for elem in self.elements:
             elem_shape = elem.icon.shape
             x,y = elem.x, elem.y
+            elem.icon = cv2.addWeighted(self.canvas[y: y + elem_shape[1], x:x + elem_shape[0]],0.4,elem.icon,0.1,0)
             self.canvas[y : y + elem_shape[1], x:x + elem_shape[0]] = elem.icon
+            if type(elem).__name__ == 'Chopper':
+                lifes = elem.lives
 
-        text = 'Fuel Left: {} | Rewards: {}'.format(self.fuel_left, self.ep_return)
+        text = 'Fuel Left: {} | Lifes Left: {} | Rewards: {}'.format(self.fuel_left, lifes, self.ep_return)
 
         # Put the info on canvas 
         self.canvas = cv2.putText(self.canvas, text, (10,20), font,  
@@ -192,9 +197,12 @@ class ChopperScape(Env):
                 # If the bird has collided.
                 if self.has_collided(self.chopper, elem):
                     # Conclude the episode and remove the chopper from the Env.
-                    done = True
-                    reward = -10
-                    self.elements.remove(self.chopper)
+                    if self.chopper.lives == 0:
+                        done = True
+                        reward = -10
+                        # self.elements.remove(self.chopper)
+                    else:
+                        self.chopper.lives -= 1
 
             if isinstance(elem, Fuel):
                 # If the fuel tank has reached the top, remove it from the Env
@@ -226,6 +234,7 @@ class ChopperScape(Env):
         return self.canvas, reward, done, []
 
 # env = ChopperScape()
+# print(env.elements)
 # obs = env.reset()
 # # print(obs)
 # plt.imshow(obs)

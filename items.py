@@ -41,10 +41,11 @@ class Point(object):
 class Chopper(Point):
     def __init__(self, name, x_max, x_min, y_max, y_min):
         super(Chopper, self).__init__(name, x_max, x_min, y_max, y_min)
-        self.icon = cv2.imread("./copter.png") / 255.0
+        self.icon = cv2.imread("copter.png") / 255.0
         self.icon_w = 64
         self.icon_h = 64
         self.icon = cv2.resize(self.icon, (self.icon_h, self.icon_w))
+        self.lives = 3
 
     
 class Bird(Point):
