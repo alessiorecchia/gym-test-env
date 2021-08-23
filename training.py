@@ -25,7 +25,7 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 TARGET_UPDATE = 10
-EPISODES = 100
+EPISODES = 25
 SAVING_PATH = './model/test_dqn'
 
 # set up matplotlib
@@ -58,7 +58,8 @@ target_net = DQN(screen_height, screen_width, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 
-optimizer = optim.RMSprop(policy_net.parameters())
+# optimizer = optim.RMSprop(policy_net.parameters())
+optimizer = optim.Adam(policy_net.parameters())
 memory = ReplayMemory(10000)
 
 

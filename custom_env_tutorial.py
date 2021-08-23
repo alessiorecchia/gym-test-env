@@ -46,13 +46,38 @@ class ChopperScape(Env):
         lifes = 0
 
         # Draw the heliopter on canvas
+
+        # original code
+        ##############################################################################################################
+        # for elem in self.elements:
+        #     elem_shape = elem.icon.shape
+        #     x,y = elem.x, elem.y
+        #     elem.icon = cv2.addWeighted(self.canvas[y: y + elem_shape[1], x:x + elem_shape[0]],0.4,elem.icon,0.1,0)
+        #     self.canvas[y : y + elem_shape[1], x:x + elem_shape[0]] = elem.icon
+        #     if type(elem).__name__ == 'Chopper':
+        #         lifes = elem.lives
+        ##############################################################################################################
+
+
+        # test code 
+        ##############################################################################################################
         for elem in self.elements:
             elem_shape = elem.icon.shape
             x,y = elem.x, elem.y
-            elem.icon = cv2.addWeighted(self.canvas[y: y + elem_shape[1], x:x + elem_shape[0]],0.4,elem.icon,0.1,0)
-            self.canvas[y : y + elem_shape[1], x:x + elem_shape[0]] = elem.icon
+            # elem.icon = cv2.addWeighted(self.canvas[y: y + elem_shape[1], x:x + elem_shape[0]],0.4,elem.icon,0.1,0)
+            # self.canvas[y : y + elem_shape[1], x:x + elem_shape[0]] = elem.icon
+            if type(elem).__name__ == 'Bird':
+                # cv2.rectangle(image, (start_x, start_y), (start_x + w, start_y + h), self.color, -1)
+                cv2.rectangle(self.canvas,(x, y), (x + 32, y + 32), (0, 0, 0), -1)
+            
+            if type(elem).__name__ == 'Fuel':
+                cv2.circle(self.canvas,(x, y), 16, (0, 0, 0), 2) 
+
+
             if type(elem).__name__ == 'Chopper':
+                cv2.circle(self.canvas,(x, y), 32, (0, 255, 0), -1)
                 lifes = elem.lives
+        ##############################################################################################################
 
         text = 'Fuel Left: {} | Lifes Left: {} | Rewards: {}'.format(self.fuel_left, lifes, self.ep_return)
 
@@ -137,7 +162,8 @@ class ChopperScape(Env):
         
         # Reward for executing a step.
 
-        reward = 1      
+        # commented out
+        reward = 0     
 
         # apply the action to the chopper
         if action == 0:
@@ -150,6 +176,7 @@ class ChopperScape(Env):
             self.chopper.move(-5,0)
         elif action == 4:
             self.chopper.move(0,0)
+            reward = 1
 
         # Spawn a bird at the right edge with prob 0.01
         if random.random() < 0.01:
@@ -163,7 +190,7 @@ class ChopperScape(Env):
             # sampled from the set of permissible values
             bird_x = self.x_max 
             bird_y = random.randrange(self.y_min, self.y_max)
-            spawned_bird.set_position(self.x_max, bird_y)
+            spawned_bird.set_position(bird_x, bird_y)
             
             # Append the spawned bird to the elements currently present in Env. 
             self.elements.append(spawned_bird)    
@@ -199,10 +226,11 @@ class ChopperScape(Env):
                     # Conclude the episode and remove the chopper from the Env.
                     if self.chopper.lives == 0:
                         done = True
-                        reward = -10
+                        reward = -20
                         # self.elements.remove(self.chopper)
                     else:
                         self.chopper.lives -= 1
+                        reward = -20
 
             if isinstance(elem, Fuel):
                 # If the fuel tank has reached the top, remove it from the Env
@@ -236,6 +264,9 @@ class ChopperScape(Env):
 # env = ChopperScape()
 # print(env.elements)
 # obs = env.reset()
-# # print(obs)
+# print(obs)
 # plt.imshow(obs)
+# plt.show()
+
+# plt.imshow(env.elements[0].icon)
 # plt.show()
